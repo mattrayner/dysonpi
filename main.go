@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 	"github.com/waringer/broadlink/broadlinkrm"
-	"github.com/stianeikeland/go-rpio/v4"
+	"github.com/stianeikeland/go-rpio"
 )
 
 func discover() {
