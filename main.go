@@ -62,11 +62,15 @@ func triggerWemo(ctx context.Context) {
 	}
 }
 
-func triggerBroadlink(ctx context.Context) {
-	log.Print("Fire BroadLink code.\n")
+func wemoOff(ctx context.Context) {
+	log.Print("Turning off switch")
+	device := &wemo.Device{Host:"192.168.1.213:49153"}
+	device.Off()
+}
 
+func triggerBroadlink(ctx context.Context) {
 	devices =  discoverBroadlink(net.ParseIP("192.168.1.84"))
-	irCommand, err := hex.DecodeString(strings.Replace(" 26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18 ", " ", "", -1))
+	irCommand, err := hex.DecodeString(strings.Replace("26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18 ", " ", "", -1))
 
 	if err != nil {
 		log.Fatalln("Provided Broadlink IR code is invalid")
@@ -118,22 +122,37 @@ func main() {
 	ctx := context.Background()
 
 	err := rpio.Open()
-
-	if err {
+	if err != nil {
 		log.Fatalln("Error opening GPIO pin")
 	}
+
+	defer rpio.Close()
 
 	pin := rpio.Pin(23)
 	pin.Input()
 	pin.PullDown()
 
 	loop := true
-	on := false
+	var pin_high = pin.Read() == rpio.High
+	log.Printf("Initial pin value: (high=%v)", pin_high)
 	for loop {
 		res := pin.Read()
+		current_pin_high := res == rpio.High
 
-		if res && !on {
-			triggerWemo(ctx)
+		if current_pin_high != pin_high {
+			pin_high = current_pin_high
+
+			log.Printf("New pin value: (high=%v)", pin_high)
+
+			if pin_high {
+				triggerWemo(ctx)
+			} else {
+				triggerBroadlink(ctx)
+
+				time.Sleep(3 * time.Second)
+
+				wemoOff(ctx)
+			}
 		}
 
 		time.Sleep(100 * time.Millisecond)
