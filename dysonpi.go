@@ -5,6 +5,7 @@ import (
 	"fmt"
 	wemo "github.com/jdfergason/go.wemo"
 	"time"
+	"github.com/waringer/broadlink/broadlinkrm"
 )
 
 func discover() {
@@ -15,33 +16,37 @@ func discover() {
 	}
 }
 
-func main() {
+func triggerWemo(ctx context.Context) {
 	device        := &wemo.Device{Host:"192.168.1.213:49153"}
 
-	// retrieve device info
-	ctx := context.Background()
 	deviceInfo, _ := device.FetchDeviceInfo(ctx)
 	fmt.Printf("Device Info => %+v\n", deviceInfo)
 
 	state := device.GetBinaryState()
 	fmt.Printf("Current State => %+v\n", state)
 
-	deviceInfo, _ = device.FetchDeviceInfo(ctx)
-	fmt.Printf("Device Info => %+v\n", deviceInfo)
+	fmt.Print("=========\n")
 
-	device.Toggle()
+	if(state == 0) {
+		fmt.Print("Switch was off, turning on.\n")
+		device.On()
 
-	state = device.GetBinaryState()
-	fmt.Printf("Current State => %+v\n", state)
+		fmt.Printf("Current State => %+v\n", device.GetBinaryState())
+	} else {
+		fmt.Print("Switch is on, no Wemo action needed.\n")
+	}
 
-	deviceInfo, _ = device.FetchDeviceInfo(ctx)
-	fmt.Printf("Device Info => %+v\n", deviceInfo)
+	triggerBroadlink(ctx)
+}
 
-	device.Toggle()
+func triggerBroadlink(ctx context.Context) {
+	fmt.Print("=========\n")
+	fmt.Print("Fire BroadLink code.\n")
+}
 
-	state = device.GetBinaryState()
-	fmt.Printf("Current State => %+v\n", state)
+func main() {
+	// retrieve device info
+	ctx := context.Background()
 
-	deviceInfo, _ = device.FetchDeviceInfo(ctx)
-	fmt.Printf("Device Info => %+v\n", deviceInfo)
+	triggerWemo(ctx)
 }
