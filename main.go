@@ -7,7 +7,6 @@ import (
 	wemo "github.com/jdfergason/go.wemo"
 	"log"
 	"net"
-	"strings"
 	"time"
 	"github.com/waringer/broadlink/broadlinkrm"
 	"github.com/stianeikeland/go-rpio"
@@ -28,32 +27,32 @@ func triggerWemo(ctx context.Context) {
 	device        := &wemo.Device{Host:"192.168.1.213:49153"}
 
 	deviceInfo, _ := device.FetchDeviceInfo(ctx)
-	log.Printf("Device Info => %+v\n", deviceInfo)
+	log.Printf("[WeMo][%s] Connected.\n", deviceInfo.FriendlyName)
 
 	state := device.GetBinaryState()
-	log.Printf("Current State => %+v\n", state)
+	log.Printf("[WeMo][%s] State: %+s\n", deviceInfo.FriendlyName, prettyWemoState(state))
 
 	if(state == 0) {
-		log.Print("Switch was off, turning on.\n")
+		log.Print("[WeMo] -> Switch was off, turning on.\n")
 		device.On()
 
-		log.Print("Sleeping for 3 seconds to allow switch to update")
+		log.Print("[WeMo] -> Sleeping for 3 seconds to allow switch to update.\n")
 		time.Sleep(3 * time.Second)
 
-		log.Printf("Current State => %+v\n", device.GetBinaryState())
+		log.Printf("[WeMo][%s] State: %+s\n", deviceInfo.FriendlyName, prettyWemoState(state))
 
 		switchOff = false
 
 		triggerBroadlink(ctx)
 	} else {
 		if switchOff {
-			log.Fatalln("Switch previously in off state, preventing endless loop by dying")
+			log.Fatalln("[WeMo] -> ! Switch previously OFF, exiting to prevent loop.")
 		}
 
-		log.Print("Switch is on, toggling power.\n")
+		log.Printf("[WeMo][%s] Turning off..\n", deviceInfo.FriendlyName)
 		device.Off()
 
-		log.Print("Sleeping for 3 seconds to allow switch to update")
+		log.Print("[WeMo] -> Sleeping for 3 seconds to allow switch to update.\n")
 		time.Sleep(3 * time.Second)
 
 		switchOff = true
@@ -62,40 +61,60 @@ func triggerWemo(ctx context.Context) {
 	}
 }
 
+func prettyWemoState(state int) string {
+	var prettyState string
+	if state == 0 {
+		prettyState = "OFF"
+	} else if state == 1 {
+		prettyState = "ON"
+	} else {
+		log.Fatalln(fmt.Sprintf("Unexpected non-binary WeMo state received: %v", state))
+	}
+
+	return prettyState
+}
+
 func wemoOff(ctx context.Context) {
-	log.Print("Turning off switch")
 	device := &wemo.Device{Host:"192.168.1.213:49153"}
+
+	deviceInfo, _ := device.FetchDeviceInfo(ctx)
+	log.Printf("[WeMo][%s] Connected.\n", deviceInfo.FriendlyName)
+
+	log.Printf("[WeMo][%s] Turning off..\n", deviceInfo.FriendlyName)
 	device.Off()
+	log.Print("[WeMo] -> Done")
 }
 
 func triggerBroadlink(ctx context.Context) {
 	devices =  discoverBroadlink(net.ParseIP("192.168.1.84"))
 
-	irCommand, err := hex.DecodeString("26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18")
-	irCommand2, err := hex.DecodeString("26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18")
-	irCommand3, err := hex.DecodeString("26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18")
+	irCommand1, err1 := hex.DecodeString("26002400491b161b151b15311531151a161a151a161c151b161a161b151a161a161a153016000d0500000000")
+	irCommand2, err2 := hex.DecodeString("26002400471a161a161b1530172f161a16191719151c163016301630153017191719161917000d0500000000")
+	irCommand3, err3 := hex.DecodeString("26002400481917191819172e182e1818171818181730182e18181818182e182e1718181817000d0500000000")
 
-	if err != nil {
-		log.Fatalln("Provided Broadlink IR code is invalid")
+	if err1 != nil || err2 != nil || err3 != nil {
+		log.Fatalln("[Broadlink] Provided Broadlink IR code is invalid")
 	}
 
-	codes := [irCommand, irCommand2, irCommand3]
+	codes := [3][]byte{irCommand1, irCommand2, irCommand3}
+	for id, device := range devices {
+		id++
 
+		for codeId, code := range codes {
+			codeId++
+			time.Sleep(1500 * time.Millisecond)
 
-	if irCommand != nil {
-		for id, device := range devices {
-			id++
-
-			response := broadlinkrm.Command(2, irCommand, &device)
+			response := broadlinkrm.Command(2, code, &device)
 
 			if response == nil {
 				log.Print(response)
-				log.Printf("[%02v] code send failed!\n", id)
+				log.Printf("[Broadlink][%02v-%02v] code send failed!\n", id, codeId)
 			} else {
-				log.Printf("[%02v] code sent.\n", id)
+				log.Printf("[Broadlink][%02v-%02v] code sent.\n", id, codeId)
 			}
 		}
 	}
+
 }
 
 func discoverBroadlink(ip net.IP) (dev []broadlinkrm.Device) {
@@ -107,19 +126,19 @@ func discoverBroadlink(ip net.IP) (dev []broadlinkrm.Device) {
 	for device := range devC {
 		id++
 
-		log.Print(fmt.Sprintf("[%02v] Device type: %X \n", id, device.DeviceType))
-		log.Print(fmt.Sprintf("[%02v] Device name: %v \n", id, device.DeviceName))
-		log.Print(fmt.Sprintf("[%02v] Device MAC: [% x] \n", id, device.DeviceMac()))
-		log.Print(fmt.Sprintf("[%02v] Device IP: %v \n", id, device.DeviceAddr.IP))
+		log.Print(fmt.Sprintf("[Broadlink][%02v] Device IP: %v \n", id, device.DeviceAddr.IP))
 
 		broadlinkrm.Auth(&device)
 
-		log.Print(fmt.Sprintf("[%02v] Authenticated\n", id))
+		log.Print(fmt.Sprintf("[Broadlink][%02v] Authenticated.\n", id))
 
 		dev = append(dev, device)
 	}
 
-	log.Print(fmt.Sprintf("Found %v device(s)\n", len(dev)))
+	if len(dev) == 0 {
+		log.Fatalln("[Broadlink] No devices found.")
+	}
+
 	return
 }
 
@@ -129,7 +148,7 @@ func main() {
 
 	err := rpio.Open()
 	if err != nil {
-		log.Fatalln("Error opening GPIO pin")
+		log.Fatalln("[GPIO] Error opening GPIO pin")
 	}
 
 	defer rpio.Close()
@@ -140,7 +159,12 @@ func main() {
 
 	loop := true
 	var pin_high = pin.Read() == rpio.High
-	log.Printf("Initial pin value: (high=%v)", pin_high)
+	log.Printf("[GPIO] Initial pin value: (high=%v)", pin_high)
+
+	if pin_high {
+		triggerWemo(ctx)
+	}
+
 	for loop {
 		res := pin.Read()
 		current_pin_high := res == rpio.High
@@ -148,7 +172,7 @@ func main() {
 		if current_pin_high != pin_high {
 			pin_high = current_pin_high
 
-			log.Printf("New pin value: (high=%v)", pin_high)
+			log.Printf("[GPIO] Pin value: (high=%v)", pin_high)
 
 			if pin_high {
 				triggerWemo(ctx)
