@@ -70,11 +70,17 @@ func wemoOff(ctx context.Context) {
 
 func triggerBroadlink(ctx context.Context) {
 	devices =  discoverBroadlink(net.ParseIP("192.168.1.84"))
-	irCommand, err := hex.DecodeString(strings.Replace("26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18 ", " ", "", -1))
+
+	irCommand, err := hex.DecodeString("26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18")
+	irCommand2, err := hex.DecodeString("26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18")
+	irCommand3, err := hex.DecodeString("26004800481917191818182e182e171917181818171a18191719171917191719172e181817000cc3481917191819172f172e181818181718181a17191719181818181818182d18")
 
 	if err != nil {
 		log.Fatalln("Provided Broadlink IR code is invalid")
 	}
+
+	codes := [irCommand, irCommand2, irCommand3]
+
 
 	if irCommand != nil {
 		for id, device := range devices {
@@ -128,7 +134,7 @@ func main() {
 
 	defer rpio.Close()
 
-	pin := rpio.Pin(23)
+	pin := rpio.Pin(25)
 	pin.Input()
 	pin.PullDown()
 
