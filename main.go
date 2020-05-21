@@ -153,7 +153,7 @@ func main() {
 
 	defer rpio.Close()
 
-	pin := rpio.Pin(25)
+	pin := rpio.Pin(21)
 	pin.Input()
 	pin.PullDown()
 
