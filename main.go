@@ -153,7 +153,10 @@ func main() {
 
 	defer rpio.Close()
 
-	pin := rpio.Pin(21)
+	pin := rpio.Pin(25)
+	log.Print("Sleeping so that pull down works on boot")
+	time.Sleep(3 * time.Second)
+
 	pin.Input()
 	pin.PullDown()
 
@@ -166,6 +169,7 @@ func main() {
 	}
 
 	for loop {
+		pin.PullDown()
 		res := pin.Read()
 		current_pin_high := res == rpio.High
 
