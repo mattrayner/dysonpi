@@ -7,4 +7,4 @@ make deps
 make build
 make update-scripts
 cd ~
-sudo systemctl restart dyson-controller.service
+sudo systemctl restart dysonpi.service
