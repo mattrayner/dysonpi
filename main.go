@@ -242,7 +242,7 @@ func main() {
 				log.Print("[DysonPi] Expected WeMo to be on, was off")
 				triggerWemo(ctx)
 			} else if !pin_high && wemoOn {
-				log.Print("[DysonPi] Expected WeMo to be off, was on.)
+				log.Print("[DysonPi] Expected WeMo to be off, was on")
 				wemoOff(ctx)
 			}
 
