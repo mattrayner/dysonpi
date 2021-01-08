@@ -12,6 +12,9 @@ import (
 	"github.com/stianeikeland/go-rpio"
 )
 
+var wemoAddress = "192.168.1.213:49153"
+var broadlinkAddress = "192.168.1.84"
+
 func discover() {
 	api, _ := wemo.NewByInterface("en0")
 	devices, _ := api.DiscoverAll(3*time.Second)
@@ -24,7 +27,7 @@ var devices []broadlinkrm.Device
 var switchOff = false
 
 func triggerWemo(ctx context.Context) {
-	device        := &wemo.Device{Host:"192.168.1.213:49153"}
+	device        := &wemo.Device{Host:wemoAddress}
 
 	deviceInfo, _ := device.FetchDeviceInfo(ctx)
 	log.Printf("[WeMo][%s] Connected.\n", deviceInfo.FriendlyName)
@@ -75,7 +78,7 @@ func prettyWemoState(state int) string {
 }
 
 func wemoOff(ctx context.Context) {
-	device := &wemo.Device{Host:"192.168.1.213:49153"}
+	device := &wemo.Device{Host:wemoAddress}
 
 	deviceInfo, _ := device.FetchDeviceInfo(ctx)
 	log.Printf("[WeMo][%s] Connected.\n", deviceInfo.FriendlyName)
@@ -86,7 +89,7 @@ func wemoOff(ctx context.Context) {
 }
 
 func triggerBroadlink(ctx context.Context) {
-	devices =  discoverBroadlink(net.ParseIP("192.168.1.84"))
+	devices =  discoverBroadlink(net.ParseIP(broadlinkAddress))
 
 	irCommand1, err1 := hex.DecodeString("26002400491b161b151b15311531151a161a151a161c151b161a161b151a161a161a153016000d0500000000")
 	irCommand2, err2 := hex.DecodeString("26002400471a161a161b1530172f161a16191719151c163016301630153017191719161917000d0500000000")
@@ -142,6 +145,21 @@ func discoverBroadlink(ip net.IP) (dev []broadlinkrm.Device) {
 	return
 }
 
+func setupLed(redPin int, greenPin int, bluePin int) {
+	log.Printf("[LED] Red=%s Green=%s Blue=%s", redPin, greenPin, bluePin)
+
+	red := rpio.Pin(redPin)
+	//green := rpio.Pin(greenPin)
+	//blue := rpio.Pin(bluePin)
+
+	red.DutyCycle(1, 4)
+	red.Freq(38000*4)
+//	pin.DutyCycle(1, 4)
+//	pin.Freq(38000*4)
+//	pin.DutyCycle(1, 4)
+//	pin.Freq(38000*4)
+}
+
 func main() {
 	// retrieve device info
 	ctx := context.Background()
@@ -163,6 +181,9 @@ func main() {
 	loop := true
 	var pin_high = pin.Read() == rpio.High
 	log.Printf("[GPIO] Initial pin value: (high=%v)", pin_high)
+
+	//setupLed(18, 23, 24)
+	//setLed(100, 100, 100)
 
 	if pin_high {
 		triggerWemo(ctx)
