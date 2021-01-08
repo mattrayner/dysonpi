@@ -42,7 +42,7 @@ func triggerWemo(ctx context.Context) {
 		log.Print("[WeMo] -> Sleeping for 3 seconds to allow switch to update.\n")
 		time.Sleep(3 * time.Second)
 
-		log.Printf("[WeMo][%s] State: %+s\n", deviceInfo.FriendlyName, prettyWemoState(state))
+		log.Printf("[WeMo][%s] State: %+s\n", deviceInfo.FriendlyName, prettyWemoState(device.GetBinaryState()))
 
 		switchOff = false
 
