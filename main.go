@@ -244,6 +244,8 @@ func main() {
 			} else if !pin_high && wemoOn {
 				log.Print("[DysonPi] Expected WeMo to be off, was on")
 				wemoOff(ctx)
+			} else {
+				log.Print("[DysonPi] WeMo in expexted state. No action needed")
 			}
 
 			lastUpdated = time.Now()
