@@ -88,6 +88,19 @@ func wemoOff(ctx context.Context) {
 	log.Print("[WeMo] -> Done")
 }
 
+func isWemoOn(ctx context.Context) bool {
+	device := &wemo.Device{Host:wemoAddress}
+
+	deviceInfo, _ := device.FetchDeviceInfo(ctx)
+	log.Printf("[WeMo][%s] Device IP: %v, connected.\n", deviceInfo.FriendlyName, device.Host)
+
+	binaryState := device.GetBinaryState()
+
+	log.Printf("[WeMo][%s] State: %+s\n", deviceInfo.FriendlyName, prettyWemoState(binaryState))
+
+	return binaryState == 1
+}
+
 func triggerBroadlink(ctx context.Context) {
 	devices =  discoverBroadlink(net.ParseIP(broadlinkAddress))
 
@@ -164,6 +177,9 @@ func main() {
 	// retrieve device info
 	ctx := context.Background()
 
+	// Interval at which we will check that the fan is doing what we expect
+	checkInterval := time.Minute * -1
+
 	err := rpio.Open()
 	if err != nil {
 		log.Fatalln("[GPIO] Error opening GPIO pin")
@@ -172,7 +188,7 @@ func main() {
 	defer rpio.Close()
 
 	pin := rpio.Pin(25)
-	log.Print("Sleeping so that pull down works on boot")
+	log.Print("[DysonPi] Sleeping so that pull down works on boot")
 	time.Sleep(3 * time.Second)
 
 	pin.Input()
@@ -192,6 +208,7 @@ func main() {
 		wemoOff(ctx)
 	}
 
+	lastUpdated := time.Now()
 	for loop {
 		pin.PullDown()
 		res := pin.Read()
@@ -211,7 +228,27 @@ func main() {
 
 				wemoOff(ctx)
 			}
+			lastUpdated = time.Now()
 		}
+
+		if lastUpdated.Before(time.Now().Add(checkInterval)) {
+			log.Print("[DysonPi] Check interval passed. Confirming WeMo state")
+			log.Printf("[GPIO] Pin value: (high=%v)", pin_high)
+
+			wemoOn := isWemoOn(ctx)
+
+			// Check that the wemo switch is in the expected state.
+			if pin_high && !wemoOn {
+				log.Print("[DysonPi] Expected WeMo to be on, was off")
+				triggerWemo(ctx)
+			} else if !pin_high && wemoOn {
+				log.Print("[DysonPi] Expected WeMo to be off, was on.)
+				wemoOff(ctx)
+			}
+
+			lastUpdated = time.Now()
+		}
+
 
 		time.Sleep(100 * time.Millisecond)
 	}
