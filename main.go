@@ -30,7 +30,7 @@ func triggerWemo(ctx context.Context) {
 	device        := &wemo.Device{Host:wemoAddress}
 
 	deviceInfo, _ := device.FetchDeviceInfo(ctx)
-	log.Printf("[WeMo][%s] Connected.\n", deviceInfo.FriendlyName)
+	log.Printf("[WeMo][%s] Device IP: %v, connected.\n", deviceInfo.FriendlyName, device.Host)
 
 	state := device.GetBinaryState()
 	log.Printf("[WeMo][%s] State: %+s\n", deviceInfo.FriendlyName, prettyWemoState(state))
@@ -81,7 +81,7 @@ func wemoOff(ctx context.Context) {
 	device := &wemo.Device{Host:wemoAddress}
 
 	deviceInfo, _ := device.FetchDeviceInfo(ctx)
-	log.Printf("[WeMo][%s] Connected.\n", deviceInfo.FriendlyName)
+	log.Printf("[WeMo][%s] Device IP: %v, connected.\n", deviceInfo.FriendlyName, device.Host)
 
 	log.Printf("[WeMo][%s] Turning off..\n", deviceInfo.FriendlyName)
 	device.Off()
