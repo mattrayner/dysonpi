@@ -12,7 +12,7 @@ import (
 	"github.com/stianeikeland/go-rpio"
 )
 
-var wemoAddress = "192.168.1.213:49153"
+var wemoAddress = "192.168.1.207:49153"
 var broadlinkAddress = "192.168.1.84"
 
 func discover() {
