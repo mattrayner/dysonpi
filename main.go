@@ -185,8 +185,11 @@ func main() {
 	//setupLed(18, 23, 24)
 	//setLed(100, 100, 100)
 
+	// IF we boot high, turn heater on, if we boot low, turn wemo off
 	if pin_high {
 		triggerWemo(ctx)
+	} else {
+		wemoOff(ctx)
 	}
 
 	for loop {
