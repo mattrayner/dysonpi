@@ -205,7 +205,7 @@ func main() {
 	// IF we boot high, turn heater on, if we boot low, turn wemo off
 	if pin_high {
 		triggerWemo(ctx)
-	} else {
+	} else if !pin_high && isWemoOn(ctx)  {
 		wemoOff(ctx)
 	}
 
