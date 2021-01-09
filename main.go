@@ -12,6 +12,9 @@ import (
 	"github.com/stianeikeland/go-rpio"
 )
 
+// Interval at which we will check that the WeMo is doing what we expect
+var checkInterval = time.Minute * -10
+
 var wemoAddress = "192.168.1.207:49153"
 var broadlinkAddress = "192.168.1.84"
 
@@ -176,9 +179,6 @@ func setupLed(redPin int, greenPin int, bluePin int) {
 func main() {
 	// retrieve device info
 	ctx := context.Background()
-
-	// Interval at which we will check that the fan is doing what we expect
-	checkInterval := time.Minute * -1
 
 	err := rpio.Open()
 	if err != nil {
