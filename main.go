@@ -190,6 +190,7 @@ func main() {
 	pin := rpio.Pin(25)
 	log.Print("[DysonPi] Sleeping so that pull down works on boot")
 	time.Sleep(3 * time.Second)
+	log.Print("[DysonPi] -> Done")
 
 	pin.Input()
 	pin.PullDown()
@@ -215,6 +216,8 @@ func main() {
 		current_pin_high := res == rpio.High
 
 		if current_pin_high != pin_high {
+			log.Printf("[DysonPi] Pin state has changed. Previous pin value: (high=%v)", pin_high)
+
 			pin_high = current_pin_high
 
 			log.Printf("[GPIO] Pin value: (high=%v)", pin_high)
@@ -228,6 +231,9 @@ func main() {
 
 				wemoOff(ctx)
 			}
+
+			log.Print("[DysonPi] -> Done")
+
 			lastUpdated = time.Now()
 		}
 
