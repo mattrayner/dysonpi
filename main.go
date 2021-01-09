@@ -49,7 +49,7 @@ func triggerWemo(ctx context.Context) {
 
 		switchOff = false
 
-		triggerBroadlink(ctx)
+		triggerBroadlink(ctx, false)
 	} else {
 		if switchOff {
 			log.Fatalln("[WeMo] -> ! Switch previously OFF, exiting to prevent loop.")
@@ -104,18 +104,26 @@ func isWemoOn(ctx context.Context) bool {
 	return binaryState == 1
 }
 
-func triggerBroadlink(ctx context.Context) {
+func triggerBroadlink(ctx context.Context, powerOnly bool) {
 	devices =  discoverBroadlink(net.ParseIP(broadlinkAddress))
 
-	irCommand1, err1 := hex.DecodeString("26002400491b161b151b15311531151a161a151a161c151b161a161b151a161a161a153016000d0500000000")
-	irCommand2, err2 := hex.DecodeString("26002400471a161a161b1530172f161a16191719151c163016301630153017191719161917000d0500000000")
-	irCommand3, err3 := hex.DecodeString("26002400481917191819172e182e1818171818181730182e18181818182e182e1718181817000d0500000000")
+	powerOn, err1 := hex.DecodeString("26002400491b161b151b15311531151a161a151a161c151b161a161b151a161a161a153016000d0500000000")
+	heatUp, err2 := hex.DecodeString("26002400471a161a161b1530172f161a16191719151c163016301630153017191719161917000d0500000000")
+	heatDown, err3 := hex.DecodeString("26002400481917191819172e182e1818171818181730182e18181818182e182e1718181817000d0500000000")
 
 	if err1 != nil || err2 != nil || err3 != nil {
 		log.Fatalln("[Broadlink] Provided Broadlink IR code is invalid")
 	}
 
-	codes := [3][]byte{irCommand1, irCommand2, irCommand3}
+	codes := make([][]byte, 0)
+	codes = append(codes, powerOn)
+
+	if !powerOnly {
+		codes = append(codes, heatUp)
+		codes = append(codes, heatDown)
+	}
+
+
 	for id, device := range devices {
 		id++
 
@@ -180,10 +188,12 @@ func main() {
 	// retrieve device info
 	ctx := context.Background()
 
+	log.Print("[DysonPi] Opening GPIO")
 	err := rpio.Open()
 	if err != nil {
 		log.Fatalln("[GPIO] Error opening GPIO pin")
 	}
+	log.Print("[DysonPi] -> Done")
 
 	defer rpio.Close()
 
@@ -216,16 +226,17 @@ func main() {
 		current_pin_high := res == rpio.High
 
 		if current_pin_high != pin_high {
-			log.Printf("[DysonPi] Pin state has changed. Previous pin value: (high=%v)", pin_high)
-
 			pin_high = current_pin_high
 
 			log.Printf("[GPIO] Pin value: (high=%v)", pin_high)
+			log.Printf("[DysonPi] Pin state has changed. Previous pin value: (high=%v)", pin_high)
 
 			if pin_high {
+				log.Print("[DysonPi] Turn on heater")
 				triggerWemo(ctx)
 			} else {
-				triggerBroadlink(ctx)
+				log.Print("[DysonPi] Turn off heater")
+				triggerBroadlink(ctx, true)
 
 				time.Sleep(3 * time.Second)
 
