@@ -229,6 +229,7 @@ func main() {
 			previous_value := pin_high
 			pin_high = current_pin_high
 
+			log.Print("-----")
 			log.Printf("[GPIO] Pin value: (high=%v)", pin_high)
 			log.Printf("[DysonPi] Pin state has changed. Previous pin value: (high=%v)", previous_value)
 
@@ -250,6 +251,7 @@ func main() {
 		}
 
 		if lastUpdated.Before(time.Now().Add(checkInterval)) {
+			log.Print("-----")
 			log.Print("[DysonPi] Check interval passed. Confirming WeMo state")
 			log.Printf("[GPIO] Pin value: (high=%v)", pin_high)
 
