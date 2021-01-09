@@ -226,10 +226,11 @@ func main() {
 		current_pin_high := res == rpio.High
 
 		if current_pin_high != pin_high {
+			previous_value := pin_high
 			pin_high = current_pin_high
 
 			log.Printf("[GPIO] Pin value: (high=%v)", pin_high)
-			log.Printf("[DysonPi] Pin state has changed. Previous pin value: (high=%v)", pin_high)
+			log.Printf("[DysonPi] Pin state has changed. Previous pin value: (high=%v)", previous_value)
 
 			if pin_high {
 				log.Print("[DysonPi] Turn on heater")
