@@ -239,14 +239,16 @@ func main() {
 
 			// Check that the wemo switch is in the expected state.
 			if pin_high && !wemoOn {
-				log.Print("[DysonPi] Expected WeMo to be on, was off")
+				log.Print("[DysonPi] -> Expected WeMo to be on, was off")
 				triggerWemo(ctx)
 			} else if !pin_high && wemoOn {
-				log.Print("[DysonPi] Expected WeMo to be off, was on")
+				log.Print("[DysonPi] -> Expected WeMo to be off, was on")
 				wemoOff(ctx)
 			} else {
-				log.Print("[DysonPi] WeMo in expexted state. No action needed")
+				log.Print("[DysonPi] WeMo in expexted state")
 			}
+
+			log.Print("[DysonPi] -> Done")
 
 			lastUpdated = time.Now()
 		}
