@@ -221,7 +221,7 @@ func main() {
 
 	lastUpdated := time.Now()
 	for loop {
-		pin.PullDown()
+		//pin.PullDown()
 		res := pin.Read()
 		current_pin_high := res == rpio.High
 
